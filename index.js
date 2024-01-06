@@ -11,9 +11,29 @@ import salesRouter from "./routes/salesRoutes.js";
 const PORT = process.env.PORT || 4000;
 dotenv.config();
 connectionDB();
+// Middlewares
+// Used to facilitate communication between the frontend and backend servers
+const allowedDomains = [process.env.FRONTEND_URL];
+const corsOptions = {
+    origin: function (origin, callback) {
+        if (allowedDomains.indexOf(origin) !== -1) {
+            // The origin of the request is allowed
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    }
+};
 
 const app = express();
 app.use(express.json());
+
+// Use the following line to enable CORS with restrictions
+// app.use(cors(corsOptions));
+
+// Use this line to enable CORS allowing all origins (for development purposes)
+app.use(cors());
+
 app.use(
   fileupload({
     useTempFiles: true,
