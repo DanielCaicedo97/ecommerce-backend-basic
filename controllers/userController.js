@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import emailRegister from "../helper/emailRegister.js";
-("../helper/emailRegister.js");
+import generateJWT from "../helper/generateJWT.js";
+
 const test = (request, response) => {
   const successMessage = "Test successfully handled User routes correctly";
 
@@ -72,4 +73,62 @@ const confirm = async (req, res) => {
   }
 };
 
-export { test, register, confirm };
+const profile = (req, res) => {
+  // Extract user data stored on the Node.js server
+  // console.log(req.user);
+  const { user } = req;
+
+  try {
+    // Send user data in the response
+    res.status(200).json({
+      user,
+    });
+  } catch (error) {
+    // Handle errors and send a 404 response
+    return res.status(404).json({
+      status: "error",
+      error: error.message,
+    });
+  }
+};
+
+const authentication = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Find user by email
+    const user = await User.findOne({ email });
+
+    // Check if user exists
+    if (!user) {
+      const error = new Error("User does not exist");
+      return res.status(403).json({ msg: error.message });
+    }
+
+    // Check if the user is confirmed
+    if (!user.confirmed) {
+      const error = new Error("Your account has not been confirmed");
+      return res.status(403).json({ msg: error.message });
+    }
+
+    // Authenticate the user by checking the password
+    if (await user.checkPassword(password)) {
+      // Generate and send JWT for authentication
+      // https://jwt.io/
+      res.json({
+        user,
+        token: generateJWT(user._id),
+        msg: "User authenticated",
+      });
+    } else {
+      const error = new Error("Incorrect password");
+      return res.status(403).json({ msg: error.message });
+    }
+  } catch (error) {
+    // Handle unexpected errors
+    console.error("Authentication error:", error);
+    return res.status(500).json({ msg: "Internal Server Error" });
+  }
+};
+
+export { test, register, confirm, profile, authentication };
